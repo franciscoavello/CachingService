@@ -11,7 +11,11 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+
 public class CachingService extends Thread{
+    
+    static String ipFront="192.168.31.247";
     
     static ArrayList<IndexInvertido> consultas = new ArrayList<IndexInvertido>();
     
@@ -38,7 +42,7 @@ public class CachingService extends Thread{
     
     public static void socketClienteDesdeCachingServiceHaciaFrontService(String respuestaAFrontService) throws Exception{        
         //Socket para el cliente (host, puerto)
-        Socket socketHaciaFrontService = new Socket("localhost", 5002);
+        Socket socketHaciaFrontService = new Socket(ipFront, 5002);
         
         //Buffer para enviar el dato al server
         DataOutputStream haciaElFrontService = new DataOutputStream(socketHaciaFrontService.getOutputStream());
