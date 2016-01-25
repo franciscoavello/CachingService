@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 public class CachingService extends Thread{
     
-    static String ipFront="192.168.31.247";
+    static String ipFront="localhost";
     
     static ArrayList<IndexInvertido> consultas = new ArrayList<IndexInvertido>();
     
