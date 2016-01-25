@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 public class CachingService extends Thread{
     
-    static String ipFront="localhost";
+    static String ipFrontService="localhost";
     
     static ArrayList<IndexInvertido> consultas = new ArrayList<IndexInvertido>();
     
@@ -42,7 +42,7 @@ public class CachingService extends Thread{
     
     public static void socketClienteDesdeCachingServiceHaciaFrontService(String respuestaAFrontService) throws Exception{        
         //Socket para el cliente (host, puerto)
-        Socket socketHaciaFrontService = new Socket(ipFront, 5002);
+        Socket socketHaciaFrontService = new Socket(ipFrontService, 5002);
         
         //Buffer para enviar el dato al server
         DataOutputStream haciaElFrontService = new DataOutputStream(socketHaciaFrontService.getOutputStream());
@@ -83,56 +83,74 @@ public class CachingService extends Thread{
             System.out.println("(Caching Service) Metodo HTTP: " + metodoHTTP);
             System.out.println("(Caching Service) Resource: " + tokens_parametros[1]);
             System.out.println("-----------------------------------------------------------------");
-            String consulta = tokens_parametros[2].replaceAll("-", " ");
-            
-            int particionAEnviar= hashParticionCache(consulta,numParticiones);
-            System.out.println("Enviando la consulta '"+ consulta + "' a la particion numero " + particionAEnviar + " del cache");
-            if(particionesCache[particionAEnviar].revisarCacheEstatico(consulta)!= null){
-                System.out.println("(Particion "+ particionAEnviar + " Cache) HIT! en el cache estatico.");
-                String paraEnviar= new String();
-                for (int i = 0; i < particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.size(); i++) {
-                    System.out.println("--------------------");
-                    System.out.println("Está en el documento: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).idDocumento);
-                    System.out.println("Con una frecuencia de: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).frecuencia);
-                    System.out.println("En la URL de wikipedia: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).URL);
-                    paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).idDocumento);
-                    paraEnviar = paraEnviar.concat("#");
-                    paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).frecuencia.toString());
-                    paraEnviar = paraEnviar.concat("#");
-                    paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).URL);
-                    if(i != particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.size()-1){
-                        paraEnviar = paraEnviar.concat(",");
-                    }                    
-                }
-                socketClienteDesdeCachingServiceHaciaFrontService(paraEnviar);
-            }            
-            else{
-                System.out.println("(Particion "+ particionAEnviar + " Cache) MISS! en el cache estatico");
-                IndexInvertido resultadoCacheDinamico = particionesCache[particionAEnviar].revisarCacheDinamico(consulta);
-                if (resultadoCacheDinamico == null) { // MISS
-                    System.out.println("(Particion "+ particionAEnviar + " Cache) MISS! en el cache dinamico");         
-                    socketClienteDesdeCachingServiceHaciaFrontService("MISS!");
-                    socketServidorCachingServiceParaIndexService(numParticiones, particionesCache);
-                }else{
-                    System.out.println("(Particion "+ particionAEnviar + " Cache) HIT! en el cache dinamico");
-                    String paraEnviar= new String();
-                    for (int i = 0; i < resultadoCacheDinamico.docFrec.size(); i++) {
+            String consulta = tokens_parametros[2].replaceAll("-", " ");      
+            String[] palabrasConsulta = consulta.split(" ");
+            String paraEnviar = new String();
+            for(int k=0; k<palabrasConsulta.length;k++){
+                consulta=palabrasConsulta[k];
+                int particionAEnviar= hashParticionCache(consulta,numParticiones);
+                System.out.println("Enviando la consulta '"+ consulta + "' a la particion numero " + particionAEnviar + " del cache");
+                if(particionesCache[particionAEnviar].revisarCacheEstatico(consulta)!= null){
+                    System.out.println("(Particion "+ particionAEnviar + " Cache) HIT! en el cache estatico.");
+                    /*if(k==0){
+                        paraEnviar= new String();
+                    }*/
+                    for (int i = 0; i < particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.size(); i++) {
                         System.out.println("--------------------");
-                        System.out.println("Está en el documento: " + resultadoCacheDinamico.docFrec.get(i).idDocumento);
-                        System.out.println("Con una frecuencia de: " + resultadoCacheDinamico.docFrec.get(i).frecuencia);
-                        System.out.println("En la URL de wikipedia: " + resultadoCacheDinamico.docFrec.get(i).URL);
-                        paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).idDocumento);
+                        System.out.println("Está en el documento: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).idDocumento);
+                        System.out.println("Con una frecuencia de: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).frecuencia);
+                        System.out.println("En la URL de wikipedia: " + particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).URL);
+                        paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).idDocumento);
                         paraEnviar = paraEnviar.concat("#");
-                        paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).frecuencia.toString());
+                        paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).frecuencia.toString());
                         paraEnviar = paraEnviar.concat("#");
-                        paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).URL);
-                        if(i != resultadoCacheDinamico.docFrec.size()-1){
+                        paraEnviar = paraEnviar.concat(particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.get(i).URL);
+                        if(i != particionesCache[particionAEnviar].revisarCacheEstatico(consulta).docFrec.size()-1){
                             paraEnviar = paraEnviar.concat(",");
                         }                    
                     }
-                    socketClienteDesdeCachingServiceHaciaFrontService(paraEnviar);
+                    if(k==palabrasConsulta.length-1){
+                        socketClienteDesdeCachingServiceHaciaFrontService(paraEnviar);
+                    }
+                    else{
+                        paraEnviar = paraEnviar.concat(",");
+                    }                    
+                }            
+                else{
+                    System.out.println("(Particion "+ particionAEnviar + " Cache) MISS! en el cache estatico");
+                    IndexInvertido resultadoCacheDinamico = particionesCache[particionAEnviar].revisarCacheDinamico(consulta);
+                    if (resultadoCacheDinamico == null) { // MISS
+                        System.out.println("(Particion "+ particionAEnviar + " Cache) MISS! en el cache dinamico");    
+                        socketClienteDesdeCachingServiceHaciaFrontService("MISS!");
+                        socketServidorCachingServiceParaIndexService(numParticiones, particionesCache);
+                        break;          
+                    }else{
+                        System.out.println("(Particion "+ particionAEnviar + " Cache) HIT! en el cache dinamico");
+                       // String paraEnviar= new String();
+                        for (int i = 0; i < resultadoCacheDinamico.docFrec.size(); i++) {
+                            System.out.println("--------------------");
+                            System.out.println("Está en el documento: " + resultadoCacheDinamico.docFrec.get(i).idDocumento);
+                            System.out.println("Con una frecuencia de: " + resultadoCacheDinamico.docFrec.get(i).frecuencia);
+                            System.out.println("En la URL de wikipedia: " + resultadoCacheDinamico.docFrec.get(i).URL);
+                            paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).idDocumento);
+                            paraEnviar = paraEnviar.concat("#");
+                            paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).frecuencia.toString());
+                            paraEnviar = paraEnviar.concat("#");
+                            paraEnviar = paraEnviar.concat(resultadoCacheDinamico.docFrec.get(i).URL);
+                            if(i != resultadoCacheDinamico.docFrec.size()-1){
+                                paraEnviar = paraEnviar.concat(",");
+                            }                    
+                        }
+                        if(k==palabrasConsulta.length-1){
+                            socketClienteDesdeCachingServiceHaciaFrontService(paraEnviar);
+                        }
+                        else{
+                            paraEnviar = paraEnviar.concat(",");
+                        }   
+                        //socketClienteDesdeCachingServiceHaciaFrontService(paraEnviar);
+                    }
+                    }
                 }
-            }
         }
     }
       
@@ -154,20 +172,36 @@ public class CachingService extends Thread{
         //Recibimos el dato del cliente y lo mostramos en el server
         desdeIndexService =inDesdeIndexService.readLine();
         System.out.println("Recibido desde Index Service para agregar al caché" + desdeIndexService);
-        if(!desdeIndexService.equals("NO")){
+        if(!desdeIndexService.equals("NO")){            
             System.out.println("Añadiendo al caché dinámico");
             String[] tokens = desdeIndexService.split(",");
-            ArrayList<ClaveValorDatos> clavVal = new ArrayList<>();
-            for(int i=0; i<tokens.length-1;i++){
-                String[] tokensDocs = tokens[i].split("#");
-                ClaveValorDatos docFrecValor = new ClaveValorDatos(tokensDocs[0],Integer.parseInt(tokensDocs[1]),tokensDocs[2]);            
-                clavVal.add(docFrecValor);            
+            System.out.println("Hay que agregar " + tokens[tokens.length-1] + " palabras");
+            int recorre=0;
+            int contador=0;
+            for(int k=0;k<Integer.parseInt(tokens[tokens.length-1]);k++){
+                String palabra = tokens[contador];
+                contador++;
+                ArrayList<ClaveValorDatos> clavVal = new ArrayList<>();                 
+                while(!tokens[contador].equals("*")){
+                    String[] tokensDocs = tokens[contador].split("#");
+                    System.out.println(tokensDocs[0] + "assada");
+                    ClaveValorDatos docFrecValor = new ClaveValorDatos(tokensDocs[0],Integer.parseInt(tokensDocs[1]),tokensDocs[2]);                    
+                    clavVal.add(docFrecValor);
+                    contador++;                    
+                }
+                contador++;
+                /*
+                for(int i=0; i<tokens.length-1;i++){
+                    String[] tokensDocs = tokens[i].split("#");
+                    ClaveValorDatos docFrecValor = new ClaveValorDatos(tokensDocs[0],Integer.parseInt(tokensDocs[1]),tokensDocs[2]);            
+                    clavVal.add(docFrecValor);            
+                }*/
+                IndexInvertido agregar = new IndexInvertido(palabra, clavVal);
+                int particionaEnviar = hashParticionCache(palabra, numParticiones);
+                System.out.println("La palabra "+ palabra + " va a la particion " + particionaEnviar);
+                particionesCache[particionaEnviar].cacheDinamico.add(agregar);
+                System.out.println("Añadido al caché dinámico");
             }
-            IndexInvertido agregar = new IndexInvertido(tokens[tokens.length-1], clavVal);
-            int particionaEnviar = hashParticionCache(tokens[tokens.length-1], numParticiones);
-            System.out.println("La palabra "+ tokens[tokens.length-1] + " va a la particion " + particionaEnviar);
-            particionesCache[particionaEnviar].cacheDinamico.add(agregar);
-            System.out.println("Añadido al caché dinámico");
         }
         socketDesdeIndexService.close();
     }
@@ -187,8 +221,8 @@ public class CachingService extends Thread{
             if(tamCache%numParticiones==0){
                 System.out.println("Auto generando preguntas y respuestas...");
                 for(int i=0; i<cantRespuestas; i++){
-                    ClaveValorDatos docFrecValor = new ClaveValorDatos("5", 1,"http://www.google.cl");
-                    ClaveValorDatos docFrecValor2 = new ClaveValorDatos("7", 3, "http://www.google.cl");
+                    ClaveValorDatos docFrecValor = new ClaveValorDatos("1", 1,"http://www.google.cl");
+                    ClaveValorDatos docFrecValor2 = new ClaveValorDatos("2", 3, "http://www.google.cl");
                     ArrayList<ClaveValorDatos> clavVal = new ArrayList<>();
                     clavVal.add(docFrecValor);
                     clavVal.add(docFrecValor2);
